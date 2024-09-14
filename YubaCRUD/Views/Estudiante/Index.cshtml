@@ -1,0 +1,211 @@
+﻿﻿@{
+    ViewBag.Title = "Estudiantes";
+}
+<main>
+    <div class="container">
+
+        <!--tabla-->
+        <table class="table-hover table table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Grado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="empTable" class="table-primary table-group-divider">
+            </tbody>
+        </table>
+
+        <div id="addEstudianteModal" class="modal fade">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Añadir estudiante</h5>
+                        <button type="button" class="close btn btn-light" data-bs-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="addEstudianteForm">
+                            <div class="form-group mb-2">
+                                <label for="estudianteName">Nombre</label>
+                                <input type="text" class="form-control" id="addEstudianteName" name="Name" required />
+                            </div>
+                            <div class="form-group mb-2">
+                                <label for="estudiantePosition">Grado</label>
+                                <input type="text" class="form-control" id="addEstudiantePosition" name="Grade" required />
+                            </div>
+                            <button type="submit" class="btn btn-primary">Guardar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="editEstudianteModal" class="modal fade">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Editar estudiante</h5>
+                        <button type="button" class="close btn btn-light" data-bs-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editEstudianteForm">
+                            <input type="hidden" id="editEstudianteId" name="Id" />
+                            <div class="form-group mb-2">
+                                <label for="estudianteName">Nombre</label>
+                                <input type="text" class="form-control" id="editEstudianteName" name="Name" required />
+                            </div>
+                            <div class="form-group mb-2">
+                                <label for="estudiantePosition">Grado</label>
+                                <input type="text" class="form-control" id="editEstudiantePosition" name="Grade" required />
+                            </div>
+                            <button type="submit" class="btn btn-primary">Guardar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="deleteModal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirmar eliminación</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>¿Está seguro que desea eliminar este registro?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Eliminar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="spinner" class="visually-hidden">
+            <div class="spinner-border text-info" role="status">
+            </div>
+        </div>
+
+    </div>
+
+    <button id="addEstudianteBtn" class="btn btn-primary position-fixed bottom-0 end-0 m-5">
+        <i class="bi bi-plus-circle p-1"></i>
+        Nuevo estudiante
+    </button>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        let estudiantesData = [];
+        let deleteEstudianteId = null;
+
+        $(document).ready(function () {
+
+            showEmployees();
+
+            // Mostrar empleados
+            function showEmployees() {
+                $.ajax({
+                    url: '@Url.Action("GetEstudiantes", "Estudiante")',
+                    type: 'GET',
+                    dataType: 'json',
+                    //Cuando sea 200, añadir cada registro de empleados
+                    success: function (data) {
+                        estudiantesData = data;
+                        var register = '';
+                        $.each(data, function (i, estudiante) {
+                            register += '<tr>';
+                            register += '<td>' + estudiante.Id +'</td>';
+                            register += '<td>' + estudiante.Name +'</td>';
+                            register += '<td>' + estudiante.Grade +'</td>';
+                            register += '<td><button class="btn btn-sm btn-primary editBtn" data-id="' + estudiante.Id + '"><i class="bi bi-pencil-fill"></i></button> <button class="btn btn-sm btn-danger deleteBtn" data-id="' + estudiante.Id+'"><i class="bi bi-trash-fill"></i></button></td>';
+                            register += '</tr>';
+                        });
+                        $('#empTable').html(register);
+                    }
+                });
+            }
+
+            // Botón de añadir usuario
+            $('#addEstudianteBtn').click(function () {
+                $('#addEstudianteForm')[0].reset();
+                $('#addEstudianteModal').modal('show');
+            });
+            // Formulario de añadir empleado
+            $('#addEstudianteForm').submit(function (e) {
+                e.preventDefault();
+                var formData = $(this).serialize();
+                $.ajax({
+                    url: '@Url.Action("AddEstudiante", "Estudiante")',
+                    type: 'POST',
+                    data: formData,
+                    success: function (data) {
+                        $('#addEmployeeModal').modal('hide');
+                        showEmployees();
+                    }
+                });
+            });
+
+            // Botones de editar empleado
+            $(document).on('click', '.editBtn', function () {
+                var id = $(this).data('id');
+                var estudiante = estudiantesData.find(function (emp) {
+                    return emp.Id == id;
+                });
+
+                if (estudiante) {
+                    $('#editEstudianteId').val(estudiante.Id);
+                    $('#editEstudianteName').val(estudiante.Name);
+                    $('#editEstudianteGrade').val(estudiante.Grade);
+
+                    $('#editEstudianteModal').modal('show');
+                } else {
+                    alert('Estudiante no encontrado');
+                }
+            });
+            //Formulario edición de empleado
+            $('#editEstudianteForm').submit(function (e) {
+                e.preventDefault();
+                var formData = $(this).serialize();
+                $.ajax({
+                    url: '@Url.Action("UpdateEstudiante", "Estudiante")',
+                    type: 'POST',
+                    data: formData,
+                    success: function (data) {
+                        $('#editEstudianteModal').modal('hide');
+                        showEmployees();
+                    }
+                });
+            });
+
+            // Botones de eliminar empleado
+            $(document).on('click', '.deleteBtn', function () {
+                deleteEstudianteId = $(this).data('id');
+                $('#deleteModal').modal('show');
+            });
+
+            // Mostrar modal eliminación de empleado
+            $('#confirmDeleteBtn').click(function () {
+                if (deleteEstudianteId) {
+                    $.ajax({
+                        url: '@Url.Action("DeleteEstudiante", "Estudiante")/' + deleteEstudianteId,
+                        type: 'POST',
+                        success: function (data) {
+                            $('#deleteModal').modal('hide');
+                            showEmployees();
+                        },
+                        error: function (err) {
+                            console.error('Error deleting estudiante:', err);
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+
+</main>
